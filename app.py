@@ -439,27 +439,36 @@ def main() -> None:
         unsafe_allow_html=True,
     )
 
-    ensure_weather_snapshot()
     server_status = start_react_server()
-    if not server_status.get("ok"):
-        st.error("React 대시보드 서버를 시작하지 못했습니다.")
-        st.warning(server_status.get("error", "Unknown error"))
-        st.code(
-            f"""cd "{REACT_APP_DIR}"
-npm install
-npm run build""",
-            language="powershell",
+    if server_status.get("ok"):
+        ensure_weather_snapshot()
+        st.markdown(
+            '<div class="fast-launch">로그인 확인 완료. 대시보드를 빠른 서버 모드로 연결했습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        components.iframe(react_dashboard_url(), height=980, scrolling=True)
+        st.caption(
+            f"연결 소스: {REACT_SERVER_URL} · 날씨 데이터: {WEATHER_SNAPSHOT_JSON} · 기존 Streamlit 앱 백업: {APP_DIR / 'app_streamlit_legacy.py'}"
         )
         return
 
-    st.markdown(
-        '<div class="fast-launch">로그인 확인 완료. 대시보드를 빠른 서버 모드로 연결했습니다.</div>',
-        unsafe_allow_html=True,
+    # Node 서버가 없는 환경(클라우드 배포 등)에서는 react_dist 빌드를 인라인해 단독 실행한다.
+    if not INDEX_HTML.exists():
+        st.error("React 대시보드 빌드를 찾지 못했습니다. react_dist/index.html이 필요합니다.")
+        st.warning(server_status.get("error", "Unknown error"))
+        return
+
+    html = load_react_html(
+        INDEX_HTML.stat().st_mtime,
+        WEATHER_TIMEBLOCK_CSV.stat().st_mtime if WEATHER_TIMEBLOCK_CSV.exists() else 0.0,
+        DONG_GEO_JSON.stat().st_mtime if DONG_GEO_JSON.exists() else 0.0,
+        current_role(),
     )
-    components.iframe(react_dashboard_url(), height=980, scrolling=True)
-    st.caption(
-        f"연결 소스: {REACT_SERVER_URL} · 날씨 데이터: {WEATHER_SNAPSHOT_JSON} · 기존 Streamlit 앱 백업: {APP_DIR / 'app_streamlit_legacy.py'}"
-    )
+    if not html:
+        st.error("React 대시보드 빌드를 읽지 못했습니다.")
+        return
+
+    components.html(html, height=980, scrolling=True)
 
 
 if __name__ == "__main__":
