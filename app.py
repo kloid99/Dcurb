@@ -213,86 +213,7 @@ def react_dashboard_url() -> str:
     return f"{_browser_react_server_url()}/?role={quote(role)}&allowed={quote(allowed)}&returnTo={quote(return_to, safe='')}"
 
 
-def inline_vite_build(index_html: str, weather_payload: dict) -> str:
-    html = index_html
-    weather_json = json.dumps(weather_payload, ensure_ascii=False).replace("</script", "<\\/script")
-    react_role, allowed_roles = _react_role_payload()
-    role_json = json.dumps(react_role, ensure_ascii=False)
-    allowed_roles_json = json.dumps(allowed_roles, ensure_ascii=False)
-    weather_bridge = f"""
-        <script>
-          window.__DCURB_WEATHER__ = {weather_json};
-          window.__DCURB_ROLE__ = {role_json};
-          window.__DCURB_ALLOWED_ROLES__ = {allowed_roles_json};
-          window.__DCURB_ORIGINAL_FETCH__ = window.fetch ? window.fetch.bind(window) : null;
-          window.fetch = function(input, init) {{
-            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
-            if (url.includes('/api/weather')) {{
-              return Promise.resolve(new Response(JSON.stringify(window.__DCURB_WEATHER__), {{
-                status: 200,
-                headers: {{ 'Content-Type': 'application/json' }}
-              }}));
-            }}
-            return window.__DCURB_ORIGINAL_FETCH__(input, init);
-          }};
-        </script>
-    """
-    loading_shell = """
-    <div id="root">
-      <div class="dc-loading-shell">
-        <aside class="dc-loading-side">
-          <div class="dc-loading-logo">D</div>
-          <div>
-            <b>D-Curb Guardian</b>
-            <span>권한 확인 및 데이터 연결 중</span>
-          </div>
-        </aside>
-        <main class="dc-loading-main">
-          <div class="dc-loading-top">
-            <div>
-              <strong>대시보드 준비 중</strong>
-              <span>DLFI, 트램, 기상 데이터를 불러오고 있습니다.</span>
-            </div>
-            <i></i>
-          </div>
-          <div class="dc-loading-grid">
-            <section></section><section></section><section></section><section></section>
-          </div>
-          <div class="dc-loading-card"></div>
-        </main>
-      </div>
-    </div>
-    """
-    html = re.sub(r'<div id="root"></div>', loading_shell, html, count=1)
-
-    css_links = re.findall(r'<link[^>]+href="([^"]+\.css)"[^>]*>', html)
-    for href in css_links:
-        css_path = DIST_DIR / href.lstrip("/")
-        if css_path.exists():
-            css = css_path.read_text(encoding="utf-8")
-            html = re.sub(
-                rf'<link[^>]+href="{re.escape(href)}"[^>]*>',
-                lambda _: f"<style>{css}</style>",
-                html,
-                count=1,
-            )
-
-    module_scripts = re.findall(r'<script[^>]+type="module"[^>]+src="([^"]+\.js)"[^>]*></script>', html)
-    for src in module_scripts:
-        js_path = DIST_DIR / src.lstrip("/")
-        if js_path.exists():
-            js = js_path.read_text(encoding="utf-8")
-            html = re.sub(
-                rf'<script[^>]+type="module"[^>]+src="{re.escape(src)}"[^>]*></script>',
-                lambda _: f"<script type='module'>{js}</script>",
-                html,
-                count=1,
-            )
-
-    return html.replace(
-        "</head>",
-        weather_bridge
-        + """
+LOADING_STYLES = """
         <style>
           html, body, #root {
             width: 100%;
@@ -380,9 +301,91 @@ def inline_vite_build(index_html: str, weather_payload: dict) -> str:
           @keyframes dc-spin { to { transform: rotate(360deg); } }
           @keyframes dc-shimmer { 100% { transform: translateX(100%); } }
         </style>
-        </head>
-        """,
-    )
+"""
+
+
+def inline_vite_build(index_html: str, weather_payload: dict) -> str:
+    html = index_html
+    weather_json = json.dumps(weather_payload, ensure_ascii=False).replace("</script", "<\\/script")
+    react_role, allowed_roles = _react_role_payload()
+    role_json = json.dumps(react_role, ensure_ascii=False)
+    allowed_roles_json = json.dumps(allowed_roles, ensure_ascii=False)
+    weather_bridge = f"""
+        <script>
+          window.__DCURB_WEATHER__ = {weather_json};
+          window.__DCURB_ROLE__ = {role_json};
+          window.__DCURB_ALLOWED_ROLES__ = {allowed_roles_json};
+          window.__DCURB_ORIGINAL_FETCH__ = window.fetch ? window.fetch.bind(window) : null;
+          window.fetch = function(input, init) {{
+            const url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
+            if (url.includes('/api/weather')) {{
+              return Promise.resolve(new Response(JSON.stringify(window.__DCURB_WEATHER__), {{
+                status: 200,
+                headers: {{ 'Content-Type': 'application/json' }}
+              }}));
+            }}
+            return window.__DCURB_ORIGINAL_FETCH__(input, init);
+          }};
+        </script>
+    """
+    loading_shell = """
+    <div id="root">
+      <div class="dc-loading-shell">
+        <aside class="dc-loading-side">
+          <div class="dc-loading-logo">D</div>
+          <div>
+            <b>D-Curb Guardian</b>
+            <span>권한 확인 및 데이터 연결 중</span>
+          </div>
+        </aside>
+        <main class="dc-loading-main">
+          <div class="dc-loading-top">
+            <div>
+              <strong>대시보드 준비 중</strong>
+              <span>DLFI, 트램, 기상 데이터를 불러오고 있습니다.</span>
+            </div>
+            <i></i>
+          </div>
+          <div class="dc-loading-grid">
+            <section></section><section></section><section></section><section></section>
+          </div>
+          <div class="dc-loading-card"></div>
+        </main>
+      </div>
+    </div>
+    """
+    html = re.sub(r'<div id="root"></div>', loading_shell, html, count=1)
+
+    # head 주입은 반드시 자산 인라인 '전에' 끝낸다. 번들 JS 안에 Leaflet용 HTML
+    # 템플릿 문자열이 들어 있고 거기에도 </head>가 있어서, 인라인한 뒤에 치환하면
+    # 스크립트 한가운데에 <style>이 박혀 모듈 전체가 SyntaxError로 죽는다.
+    html = html.replace("</head>", weather_bridge + LOADING_STYLES + "</head>", 1)
+
+    css_links = re.findall(r'<link[^>]+href="([^"]+\.css)"[^>]*>', html)
+    for href in css_links:
+        css_path = DIST_DIR / href.lstrip("/")
+        if css_path.exists():
+            css = css_path.read_text(encoding="utf-8")
+            html = re.sub(
+                rf'<link[^>]+href="{re.escape(href)}"[^>]*>',
+                lambda _: f"<style>{css}</style>",
+                html,
+                count=1,
+            )
+
+    module_scripts = re.findall(r'<script[^>]+type="module"[^>]+src="([^"]+\.js)"[^>]*></script>', html)
+    for src in module_scripts:
+        js_path = DIST_DIR / src.lstrip("/")
+        if js_path.exists():
+            js = js_path.read_text(encoding="utf-8")
+            html = re.sub(
+                rf'<script[^>]+type="module"[^>]+src="{re.escape(src)}"[^>]*></script>',
+                lambda _: f"<script type='module'>{js}</script>",
+                html,
+                count=1,
+            )
+
+    return html
 
 
 @st.cache_data(show_spinner=False)
