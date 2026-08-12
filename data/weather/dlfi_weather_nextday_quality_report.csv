@@ -1,0 +1,7 @@
+﻿check_name,actual_value,expected_value,result
+전체 행 수,492,492,PASS
+행정동 수,82,82,PASS
+시간대 수,6,6,PASS
+복합키 중복,0,0,PASS
+핵심변수 결측,0,0,PASS
+시간대 예보 미충족,0,0,PASS

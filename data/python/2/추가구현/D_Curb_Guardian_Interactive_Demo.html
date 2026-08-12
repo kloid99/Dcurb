@@ -1,0 +1,1682 @@
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>D Curb Guardian Demo</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: transparent !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --main-surface-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: light-dark(rgb(26 28 31), rgb(255 255 255));
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(--foreground);
+  --popover: light-dark(rgb(255 255 255), rgb(45 45 45));
+  --popover-foreground: var(--foreground);
+  --primary: light-dark(rgb(51 156 255), rgb(131 195 255));
+  --primary-foreground: light-dark(rgb(255 255 255), rgb(13 13 13));
+  --secondary: light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%));
+  --secondary-foreground: var(--foreground);
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: light-dark(
+    rgb(26 28 31 / 49.4%),
+    rgb(255 255 255 / 49.8%)
+  );
+  --accent: light-dark(rgb(229 242 255), rgb(13 39 63));
+  --accent-foreground: var(--primary);
+  --destructive: light-dark(rgb(226 85 7), rgb(255 133 73));
+  --border: light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%));
+  --input: light-dark(
+    rgb(26 28 31 / 11.8%),
+    color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+  );
+  --ring: light-dark(rgb(51 156 255), rgb(131 195 255 / 76%));
+  --font-size-base: 14px;
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: 10px;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+  --color-background-primary: var(--background);
+  --color-text-primary: var(--foreground);
+  --color-border-secondary: var(--border);
+}
+
+:root[data-visualize-standalone] {
+  background-color: var(--background) !important;
+}
+
+/* Generic mobile code-block hosts provide light/dark mode but no series palette.
+   AppBlock hosts set all six variables themselves. */
+:root:not([data-app-block-surface]) {
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+:root:not([data-app-block-surface]) > body {
+  padding: 12px;
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The bundled tooltip runtime owns [data-tooltip]. AppBlock's CSS-only
+   pseudo-tooltip can widen dense grids even while hidden. */
+main [data-tooltip]::after {
+  content: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--interactive-label-primary-default, var(--primary-foreground));
+  background: var(--interactive-bg-primary-default, var(--foreground));
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(
+    in srgb,
+    var(--interactive-label-primary-default, var(--primary-foreground)) 50%,
+    transparent
+  );
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+</style>
+</head>
+<body>
+<div id="dcurb-demo">
+  <style>
+    #dcurb-demo {
+      color: var(--foreground);
+      width: 100%;
+    }
+    #dcurb-demo * {
+      box-sizing: border-box;
+    }
+    #dcurb-demo .dc-controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    #dcurb-demo .dc-control {
+      display: grid;
+      gap: 0.35rem;
+    }
+    #dcurb-demo .dc-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    #dcurb-demo .dc-tab-panel[hidden] {
+      display: none;
+    }
+    #dcurb-demo .dc-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin: 0.85rem 0 1rem;
+    }
+    #dcurb-demo .dc-main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.85fr);
+      gap: 1rem;
+      align-items: start;
+    }
+    #dcurb-demo .dc-split {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+    #dcurb-demo .dc-link-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+    #dcurb-demo .dc-section {
+      margin: 1rem 0;
+    }
+    #dcurb-demo .dc-section-title {
+      font-weight: 500;
+      margin-bottom: 0.65rem;
+    }
+    #dcurb-demo .dc-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      color: var(--primary-foreground);
+      background: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+    #dcurb-demo .dc-region {
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+    #dcurb-demo .dc-policy {
+      margin-top: 0.75rem;
+      padding-left: 0.75rem;
+      border-left: 3px solid var(--foreground);
+    }
+    #dcurb-demo .dc-muted {
+      color: var(--muted-foreground);
+    }
+    #dcurb-demo .dc-bars {
+      display: grid;
+      gap: 0.7rem;
+    }
+    #dcurb-demo .dc-bar-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) 44px;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    #dcurb-demo .dc-track {
+      height: 16px;
+      background: var(--muted);
+      overflow: hidden;
+    }
+    #dcurb-demo .dc-fill {
+      height: 100%;
+      background: var(--foreground);
+    }
+    #dcurb-demo .dc-fill.secondary {
+      background: var(--muted-foreground);
+    }
+    #dcurb-demo .dc-evidence {
+      display: grid;
+      gap: 0.55rem;
+    }
+    #dcurb-demo .dc-evidence-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px solid var(--border);
+    }
+    #dcurb-demo .dc-table-wrap {
+      overflow-x: auto;
+    }
+    #dcurb-demo table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    #dcurb-demo th,
+    #dcurb-demo td {
+      padding: 0.55rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      white-space: nowrap;
+    }
+    #dcurb-demo th {
+      font-weight: 500;
+    }
+    #dcurb-demo .dc-map-empty {
+      min-height: 290px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted-foreground);
+      border: 1px dashed var(--border);
+    }
+    #dcurb-demo .dc-policy-list {
+      margin: 0;
+      padding-left: 1.1rem;
+    }
+    #dcurb-demo .dc-slider-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    #dcurb-demo .dc-range-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 0.35rem;
+    }
+    #dcurb-demo input[type="range"] {
+      width: 100%;
+    }
+    #dcurb-demo .dc-compare-bars {
+      display: grid;
+      gap: 0.8rem;
+      margin-top: 1rem;
+    }
+    #dcurb-demo .dc-compare-row {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      gap: 0.6rem;
+      align-items: start;
+    }
+    #dcurb-demo .dc-dual {
+      display: grid;
+      gap: 0.25rem;
+    }
+    #dcurb-demo .dc-quality-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    #dcurb-demo .dc-empty {
+      padding: 1rem 0;
+      color: var(--muted-foreground);
+    }
+    @media (max-width: 680px) {
+      #dcurb-demo .dc-controls,
+      #dcurb-demo .dc-metrics,
+      #dcurb-demo .dc-quality-grid,
+      #dcurb-demo .dc-link-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      #dcurb-demo .dc-main-grid,
+      #dcurb-demo .dc-split,
+      #dcurb-demo .dc-slider-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 420px) {
+      #dcurb-demo .dc-controls,
+      #dcurb-demo .dc-metrics,
+      #dcurb-demo .dc-quality-grid,
+      #dcurb-demo .dc-link-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div class="dc-controls">
+    <label class="dc-control">
+      <span>시군구</span>
+      <select id="dc-district"></select>
+    </label>
+    <label class="dc-control">
+      <span>주위험유형</span>
+      <select id="dc-type"></select>
+    </label>
+    <label class="dc-control">
+      <span>행정동</span>
+      <select id="dc-region"></select>
+    </label>
+  </div>
+
+  <div class="dc-tabs" role="tablist" aria-label="서비스 화면">
+    <button class="btn btn-secondary" type="button" data-tab="analysis" aria-selected="true">위험유형 분석</button>
+    <button class="btn btn-secondary" type="button" data-tab="map" aria-selected="false">위험지도</button>
+    <button class="btn btn-secondary" type="button" data-tab="policy" aria-selected="false">정책 추천</button>
+    <button class="btn btn-secondary" type="button" data-tab="compare" aria-selected="false">지역 비교</button>
+    <button class="btn btn-secondary" type="button" data-tab="link" aria-selected="false">팀 기능 연계</button>
+    <button class="btn btn-secondary" type="button" data-tab="quality" aria-selected="false">데이터 신뢰도</button>
+  </div>
+
+  <section class="dc-tab-panel" data-panel="analysis">
+    <span class="dc-badge" id="dc-type-badge"></span>
+    <div class="dc-region" id="dc-selected-name"></div>
+    <div class="dc-muted">6개 DLFI 세부지표를 같은 백분위 기준으로 비교한 자동 분류 결과입니다.</div>
+
+    <div class="dc-metrics">
+      <div class="card viz-stat"><div class="dc-muted">DLFI</div><div class="viz-stat-value" id="dc-dlfi"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">대전 순위</div><div class="viz-stat-value" id="dc-rank"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">분류명확도</div><div class="viz-stat-value" id="dc-clarity"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">보조위험유형</div><div class="viz-stat-value" id="dc-secondary"></div></div>
+    </div>
+
+    <div class="dc-main-grid">
+      <div>
+        <div class="dc-section-title">6개 위험지표 비교</div>
+        <div class="dc-bars" id="dc-risk-bars"></div>
+      </div>
+      <div>
+        <div class="dc-section-title">자동 분류 근거</div>
+        <div class="dc-evidence" id="dc-evidence"></div>
+        <div class="dc-policy"><strong>권장 관리방향</strong><br><span id="dc-policy"></span></div>
+      </div>
+    </div>
+
+    <div class="dc-section">
+      <div class="dc-section-title">필터 적용 행정동 우선순위</div>
+      <div class="dc-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>지역</th>
+              <th>DLFI</th>
+              <th>주위험유형</th>
+              <th>분류명확도</th>
+            </tr>
+          </thead>
+          <tbody id="dc-ranking-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="dc-tab-panel" data-panel="map" hidden>
+    <div class="dc-section-title">행정동별 DLFI 위험지도</div>
+    <div class="dc-map-empty">
+      <div>
+        <strong>대전 행정동 경계 GeoJSON 연결 대기</strong><br>
+        <span>Streamlit 앱에 daejeon_admin_dong.geojson을 추가하면 DLFI 순위별 무채색 지도가 표시됩니다.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="dc-tab-panel" data-panel="policy" hidden>
+    <span class="dc-badge" id="dc-priority"></span>
+    <div class="dc-region" id="dc-policy-region"></div>
+    <div class="dc-split dc-section">
+      <div>
+        <div class="dc-section-title" id="dc-primary-title"></div>
+        <ul class="dc-policy-list" id="dc-primary-list"></ul>
+      </div>
+      <div>
+        <div class="dc-section-title" id="dc-secondary-title"></div>
+        <ul class="dc-policy-list" id="dc-secondary-list"></ul>
+      </div>
+    </div>
+    <div class="dc-section">
+      <div class="dc-section-title">정책 What-if 시뮬레이터</div>
+      <div class="dc-muted">공모전 데모를 위한 가정 기반 예상치이며 실제 정책효과를 확정하지 않습니다.</div>
+      <div class="dc-slider-grid">
+        <label>
+          <span class="dc-range-head"><span>추가 임시 하역면</span><strong id="dc-loading-value"></strong></span>
+          <input id="dc-loading" type="range" min="0" max="10" value="3">
+        </label>
+        <label>
+          <span class="dc-range-head"><span>배송 분산율</span><strong id="dc-dispersion-value"></strong></span>
+          <input id="dc-dispersion" type="range" min="0" max="30" value="15">
+        </label>
+      </div>
+      <div class="dc-metrics">
+        <div class="card viz-stat"><div class="dc-muted">적용 전</div><div class="viz-stat-value" id="dc-before"></div></div>
+        <div class="card viz-stat"><div class="dc-muted">적용 후 예상</div><div class="viz-stat-value" id="dc-after"></div></div>
+        <div class="card viz-stat"><div class="dc-muted">예상 감소율</div><div class="viz-stat-value" id="dc-reduction"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="dc-tab-panel" data-panel="compare" hidden>
+    <div class="dc-controls">
+      <label class="dc-control"><span>비교지역 A</span><select id="dc-compare-a"></select></label>
+      <label class="dc-control"><span>비교지역 B</span><select id="dc-compare-b"></select></label>
+    </div>
+    <div class="dc-metrics">
+      <div class="card viz-stat"><div class="dc-muted" id="dc-a-name"></div><div class="viz-stat-value" id="dc-a-score"></div></div>
+      <div class="card viz-stat"><div class="dc-muted" id="dc-b-name"></div><div class="viz-stat-value" id="dc-b-score"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">DLFI 차이</div><div class="viz-stat-value" id="dc-gap"></div></div>
+    </div>
+    <div class="dc-compare-bars" id="dc-compare-bars"></div>
+    <div class="dc-policy" id="dc-compare-summary"></div>
+  </section>
+
+  <section class="dc-tab-panel" data-panel="link" hidden>
+    <div class="dc-link-grid">
+      <div class="card">
+        <div class="dc-section-title">① 하역공간 후보지·운영시간</div>
+        <div class="dc-muted">후보지명·적합도·권장 운영시간을 선택 행정동과 연결합니다.</div>
+      </div>
+      <div class="card">
+        <div class="dc-section-title">③ 정책 What-if</div>
+        <div class="dc-muted">하역면 수와 배송 분산율에 따른 DLFI 변화를 비교합니다.</div>
+      </div>
+      <div class="card">
+        <div class="dc-section-title">④ 데이터 신뢰도</div>
+        <div class="dc-muted">최신성·직접성·완전성·근거점수와 품질 플래그를 확인합니다.</div>
+      </div>
+    </div>
+    <div class="dc-section">
+      <div class="dc-section-title">하역공간 후보지 데이터 연결</div>
+      <div class="dc-map-empty">
+        loading_zone_candidates.csv가 추가되면 선택 행정동의 실제 후보지 순위를 표시합니다.
+      </div>
+    </div>
+  </section>
+
+  <section class="dc-tab-panel" data-panel="quality" hidden>
+    <div class="dc-quality-grid">
+      <div class="card viz-stat"><div class="dc-muted">종합 신뢰도</div><div class="viz-stat-value" id="dc-trust"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">신뢰도 등급</div><div class="viz-stat-value" id="dc-grade"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">데이터 수단 수</div><div class="viz-stat-value" id="dc-source-count"></div></div>
+      <div class="card viz-stat"><div class="dc-muted">정책판단</div><div class="viz-stat-value" id="dc-decision"></div></div>
+    </div>
+    <div class="dc-section-title">품질요인</div>
+    <div class="dc-bars" id="dc-quality-bars"></div>
+    <div class="dc-policy">품질 플래그: <strong id="dc-quality-flag"></strong></div>
+  </section>
+
+  <script type="application/json" id="dc-data">[{"code":"3020053000","district":"유성구","dong":"온천1동","region":"유성구 온천1동","rank":1,"dlfi":352.82,"highRisk":1,"primary":"공동주택 배송집중형","secondary":"역세권 보행충돌형","primaryBasis":"배송수요","secondaryBasis":"보행충돌","primaryPct":99.4,"secondaryPct":97.0,"clarity":51.2,"policy":"배송시간 분산·공동배송 운영 검토","delivery":99.4,"traffic":45.7,"pedestrian":97.0,"enforcement":94.5,"safety":97.0,"loadingRisk":76.2,"trust":91.84,"grade":"높음","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":92.8},{"code":"3017064000","district":"서구","dong":"둔산2동","region":"서구 둔산2동","rank":2,"dlfi":320.22,"highRisk":1,"primary":"역세권 보행충돌형","secondary":"단속반복형","primaryBasis":"보행충돌","secondaryBasis":"단속반복","primaryPct":99.4,"secondaryPct":99.4,"clarity":50.0,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":94.5,"traffic":91.5,"pedestrian":99.4,"enforcement":99.4,"safety":18.9,"loadingRisk":68.3,"trust":90.28,"grade":"높음","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":86.6},{"code":"3020054000","district":"유성구","dong":"온천2동","region":"유성구 온천2동","rank":3,"dlfi":306.67,"highRisk":1,"primary":"공동주택 배송집중형","secondary":"역세권 보행충돌형","primaryBasis":"배송수요","secondaryBasis":"보행충돌","primaryPct":98.2,"secondaryPct":94.5,"clarity":51.8,"policy":"배송시간 분산·공동배송 운영 검토","delivery":98.2,"traffic":65.9,"pedestrian":94.5,"enforcement":89.6,"safety":79.9,"loadingRisk":25.0,"trust":86.89,"grade":"높음","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":94.0},{"code":"3020054600","district":"유성구","dong":"노은1동","region":"유성구 노은1동","rank":4,"dlfi":295.15,"highRisk":1,"primary":"안전취약형","secondary":"단속반복형","primaryBasis":"안전취약","secondaryBasis":"단속반복","primaryPct":95.7,"secondaryPct":87.2,"clarity":54.3,"policy":"등하교·취약계층 이동시간 회피","delivery":72.6,"traffic":81.1,"pedestrian":83.5,"enforcement":87.2,"safety":95.7,"loadingRisk":78.7,"trust":90.02,"grade":"높음","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":85.5},{"code":"3020052000","district":"유성구","dong":"진잠동","region":"유성구 진잠동","rank":5,"dlfi":291.77,"highRisk":1,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":98.2,"secondaryPct":90.9,"clarity":53.7,"policy":"등하교·취약계층 이동시간 회피","delivery":90.9,"traffic":68.3,"pedestrian":60.4,"enforcement":78.7,"safety":98.2,"loadingRisk":60.4,"trust":84.05,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.6},{"code":"3014074000","district":"중구","dong":"산성동","region":"중구 산성동","rank":6,"dlfi":286.11,"highRisk":1,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":99.4,"secondaryPct":75.0,"clarity":62.2,"policy":"등하교·취약계층 이동시간 회피","delivery":75.0,"traffic":70.1,"pedestrian":74.4,"enforcement":47.0,"safety":99.4,"loadingRisk":7.9,"trust":72.78,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":37.6},{"code":"3017059700","district":"서구","dong":"관저2동","region":"서구 관저2동","rank":7,"dlfi":283.95,"highRisk":1,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":95.7,"secondaryPct":92.1,"clarity":51.8,"policy":"배송시간 분산·공동배송 운영 검토","delivery":95.7,"traffic":78.0,"pedestrian":62.8,"enforcement":92.1,"safety":89.6,"loadingRisk":59.1,"trust":82.09,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":74.8},{"code":"3020054800","district":"유성구","dong":"노은3동","region":"유성구 노은3동","rank":8,"dlfi":280.81,"highRisk":1,"primary":"상권·교통 혼잡형","secondary":"역세권 보행충돌형","primaryBasis":"교통방해","secondaryBasis":"보행충돌","primaryPct":98.2,"secondaryPct":92.1,"clarity":53.0,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":81.1,"traffic":98.2,"pedestrian":92.1,"enforcement":64.0,"safety":77.4,"loadingRisk":55.5,"trust":82.43,"grade":"보통","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":55.1},{"code":"3020055000","district":"유성구","dong":"신성동","region":"유성구 신성동","rank":9,"dlfi":274.92,"highRisk":1,"primary":"공동주택 배송집중형","secondary":"상권·교통 혼잡형","primaryBasis":"배송수요","secondaryBasis":"교통방해","primaryPct":89.6,"secondaryPct":88.4,"clarity":50.6,"policy":"배송시간 분산·공동배송 운영 검토","delivery":89.6,"traffic":88.4,"pedestrian":74.4,"enforcement":84.8,"safety":87.2,"loadingRisk":53.0,"trust":82.73,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":77.4},{"code":"3011051500","district":"동구","dong":"중앙동","region":"동구 중앙동","rank":10,"dlfi":267.24,"highRisk":1,"primary":"역세권 보행충돌형","secondary":"상권·교통 혼잡형","primaryBasis":"보행충돌","secondaryBasis":"교통방해","primaryPct":98.2,"secondaryPct":97.0,"clarity":50.6,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":28.7,"traffic":97.0,"pedestrian":98.2,"enforcement":88.4,"safety":29.9,"loadingRisk":23.8,"trust":82.87,"grade":"보통","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":56.9},{"code":"3020058000","district":"유성구","dong":"구즉동","region":"유성구 구즉동","rank":11,"dlfi":265.79,"highRisk":1,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":99.4,"secondaryPct":90.9,"clarity":54.3,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":84.8,"traffic":99.4,"pedestrian":50.6,"enforcement":62.8,"safety":90.9,"loadingRisk":49.4,"trust":75.44,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":48.2},{"code":"3020060000","district":"유성구","dong":"관평동","region":"유성구 관평동","rank":12,"dlfi":263.21,"highRisk":1,"primary":"공동주택 배송집중형","secondary":"안전취약형","primaryBasis":"배송수요","secondaryBasis":"안전취약","primaryPct":92.1,"secondaryPct":92.1,"clarity":50.0,"policy":"배송시간 분산·공동배송 운영 검토","delivery":92.1,"traffic":48.2,"pedestrian":64.0,"enforcement":90.9,"safety":92.1,"loadingRisk":83.5,"trust":81.4,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":72.0},{"code":"3014053500","district":"중구","dong":"은행선화동","region":"중구 은행선화동","rank":13,"dlfi":257.67,"highRisk":1,"primary":"역세권 보행충돌형","secondary":"공동주택 배송집중형","primaryBasis":"보행충돌","secondaryBasis":"배송수요","primaryPct":95.7,"secondaryPct":87.2,"clarity":54.3,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":87.2,"traffic":25.6,"pedestrian":95.7,"enforcement":83.5,"safety":70.7,"loadingRisk":68.3,"trust":72.35,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":70.8},{"code":"3014072000","district":"중구","dong":"문화1동","region":"중구 문화1동","rank":14,"dlfi":256.33,"highRisk":1,"primary":"역세권 보행충돌형","secondary":"안전취약형","primaryBasis":"보행충돌","secondaryBasis":"안전취약","primaryPct":90.9,"secondaryPct":88.4,"clarity":51.2,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":56.7,"traffic":68.3,"pedestrian":90.9,"enforcement":67.7,"safety":88.4,"loadingRisk":31.1,"trust":75.46,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":48.3},{"code":"3017059300","district":"서구","dong":"도안동","region":"서구 도안동","rank":15,"dlfi":248.95,"highRisk":1,"primary":"단속반복형","secondary":"공동주택 배송집중형","primaryBasis":"단속반복","secondaryBasis":"배송수요","primaryPct":98.2,"secondaryPct":93.3,"clarity":52.4,"policy":"탄력 하역권·단속 운영기준 검토","delivery":93.3,"traffic":55.5,"pedestrian":70.1,"enforcement":98.2,"safety":25.0,"loadingRisk":87.2,"trust":78.14,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":59.0},{"code":"3017063000","district":"서구","dong":"둔산1동","region":"서구 둔산1동","rank":16,"dlfi":248.43,"highRisk":1,"primary":"단속반복형","secondary":"역세권 보행충돌형","primaryBasis":"단속반복","secondaryBasis":"보행충돌","primaryPct":97.0,"secondaryPct":93.3,"clarity":51.8,"policy":"탄력 하역권·단속 운영기준 검토","delivery":61.6,"traffic":64.0,"pedestrian":93.3,"enforcement":97.0,"safety":9.1,"loadingRisk":82.3,"trust":82.37,"grade":"보통","sourceCount":3,"decision":"①시범사업우선","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":54.9},{"code":"3017055500","district":"서구","dong":"탄방동","region":"서구 탄방동","rank":17,"dlfi":244.18,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":97.0,"secondaryPct":95.7,"clarity":50.6,"policy":"배송시간 분산·공동배송 운영 검토","delivery":97.0,"traffic":25.6,"pedestrian":71.3,"enforcement":95.7,"safety":20.7,"loadingRisk":57.9,"trust":68.72,"grade":"주의","sourceCount":2,"decision":"②현장조사우선","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":56.3},{"code":"3011064000","district":"동구","dong":"용전동","region":"동구 용전동","rank":18,"dlfi":239.05,"highRisk":0,"primary":"하역공간 부족형","secondary":"공동주택 배송집중형","primaryBasis":"하역부족","secondaryBasis":"배송수요","primaryPct":84.8,"secondaryPct":82.3,"clarity":51.2,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":82.3,"traffic":71.3,"pedestrian":78.7,"enforcement":79.9,"safety":54.3,"loadingRisk":84.8,"trust":77.29,"grade":"보통","sourceCount":2,"decision":"①시범사업우선","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":55.6},{"code":"3014057500","district":"중구","dong":"대흥동","region":"중구 대흥동","rank":19,"dlfi":231.8,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"단속반복형","primaryBasis":"보행충돌","secondaryBasis":"단속반복","primaryPct":88.4,"secondaryPct":82.3,"clarity":53.0,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":67.7,"traffic":25.6,"pedestrian":88.4,"enforcement":82.3,"safety":73.8,"loadingRisk":62.8,"trust":67.14,"grade":"주의","sourceCount":1,"decision":"②현장조사우선","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":71.0},{"code":"3011063000","district":"동구","dong":"가양2동","region":"동구 가양2동","rank":20,"dlfi":224.59,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":93.3,"secondaryPct":66.5,"clarity":63.4,"policy":"등하교·취약계층 이동시간 회피","delivery":64.0,"traffic":25.6,"pedestrian":66.5,"enforcement":60.4,"safety":93.3,"loadingRisk":43.3,"trust":67.24,"grade":"주의","sourceCount":1,"decision":"②현장조사우선","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":71.4},{"code":"3023051000","district":"대덕구","dong":"오정동","region":"대덕구 오정동","rank":21,"dlfi":221.3,"highRisk":0,"primary":"하역공간 부족형","secondary":"역세권 보행충돌형","primaryBasis":"하역부족","secondaryBasis":"보행충돌","primaryPct":94.5,"secondaryPct":82.3,"clarity":56.1,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":66.5,"traffic":25.6,"pedestrian":82.3,"enforcement":68.9,"safety":76.2,"loadingRisk":94.5,"trust":68.48,"grade":"주의","sourceCount":2,"decision":"②현장조사우선","qualityFlag":"교통데이터_2종|교통방해_대체값(괴정동_오적용확인)|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":76.4},{"code":"3011053000","district":"동구","dong":"효동","region":"동구 효동","rank":22,"dlfi":219.62,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":81.1,"secondaryPct":79.9,"clarity":50.6,"policy":"등하교·취약계층 이동시간 회피","delivery":79.9,"traffic":53.0,"pedestrian":51.8,"enforcement":66.5,"safety":81.1,"loadingRisk":61.6,"trust":80.74,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":69.4},{"code":"3020061000","district":"유성구","dong":"원신흥동","region":"유성구 원신흥동","rank":23,"dlfi":219.51,"highRisk":0,"primary":"하역공간 부족형","secondary":"공동주택 배송집중형","primaryBasis":"하역부족","secondaryBasis":"배송수요","primaryPct":88.4,"secondaryPct":83.5,"clarity":52.4,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":83.5,"traffic":79.9,"pedestrian":61.6,"enforcement":51.8,"safety":48.2,"loadingRisk":88.4,"trust":81.68,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":73.2},{"code":"3017052000","district":"서구","dong":"도마1동","region":"서구 도마1동","rank":24,"dlfi":218.03,"highRisk":0,"primary":"단속반복형","secondary":"공동주택 배송집중형","primaryBasis":"단속반복","secondaryBasis":"배송수요","primaryPct":86.0,"secondaryPct":71.3,"clarity":57.3,"policy":"탄력 하역권·단속 운영기준 검토","delivery":71.3,"traffic":25.6,"pedestrian":67.7,"enforcement":86.0,"safety":68.9,"loadingRisk":26.2,"trust":65.32,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":63.7},{"code":"3023054600","district":"대덕구","dong":"중리동","region":"대덕구 중리동","rank":25,"dlfi":215.64,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":78.7,"secondaryPct":72.6,"clarity":53.0,"policy":"배송시간 분산·공동배송 운영 검토","delivery":78.7,"traffic":62.8,"pedestrian":68.9,"enforcement":72.6,"safety":34.8,"loadingRisk":45.1,"trust":80.62,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":68.9},{"code":"3017058600","district":"서구","dong":"월평1동","region":"서구 월평1동","rank":26,"dlfi":215.51,"highRisk":0,"primary":"단속반복형","secondary":"상권·교통 혼잡형","primaryBasis":"단속반복","secondaryBasis":"교통방해","primaryPct":93.3,"secondaryPct":91.5,"clarity":50.9,"policy":"탄력 하역권·단속 운영기준 검토","delivery":60.4,"traffic":91.5,"pedestrian":11.0,"enforcement":93.3,"safety":43.3,"loadingRisk":40.9,"trust":85.94,"grade":"높음","sourceCount":3,"decision":"③관찰유지","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":69.2},{"code":"3023054300","district":"대덕구","dong":"송촌동","region":"대덕구 송촌동","rank":27,"dlfi":212.84,"highRisk":0,"primary":"단속반복형","secondary":"공동주택 배송집중형","primaryBasis":"단속반복","secondaryBasis":"배송수요","primaryPct":76.2,"secondaryPct":73.8,"clarity":51.2,"policy":"탄력 하역권·단속 운영기준 검토","delivery":73.8,"traffic":49.4,"pedestrian":46.3,"enforcement":76.2,"safety":70.7,"loadingRisk":38.4,"trust":83.03,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":78.5},{"code":"3011055100","district":"동구","dong":"판암1동","region":"동구 판암1동","rank":28,"dlfi":208.88,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":83.5,"secondaryPct":81.1,"clarity":51.2,"policy":"등하교·취약계층 이동시간 회피","delivery":20.1,"traffic":25.6,"pedestrian":81.1,"enforcement":57.9,"safety":83.5,"loadingRisk":72.6,"trust":74.27,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":78.5},{"code":"3017055000","district":"서구","dong":"용문동","region":"서구 용문동","rank":29,"dlfi":208.29,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"상권·교통 혼잡형","primaryBasis":"보행충돌","secondaryBasis":"교통방해","primaryPct":84.8,"secondaryPct":76.2,"clarity":54.3,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":70.1,"traffic":76.2,"pedestrian":84.8,"enforcement":40.9,"safety":7.9,"loadingRisk":47.0,"trust":88.0,"grade":"높음","sourceCount":3,"decision":"③관찰유지","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":77.4},{"code":"3017057500","district":"서구","dong":"내동","region":"서구 내동","rank":30,"dlfi":204.11,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"하역공간 부족형","primaryBasis":"교통방해","secondaryBasis":"하역부족","primaryPct":95.7,"secondaryPct":94.5,"clarity":50.6,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":55.5,"traffic":95.7,"pedestrian":49.4,"enforcement":42.1,"safety":14.0,"loadingRisk":94.5,"trust":78.6,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":70.0,"evidence":81.8},{"code":"3014067000","district":"중구","dong":"오류동","region":"중구 오류동","rank":31,"dlfi":203.6,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"상권·교통 혼잡형","primaryBasis":"보행충돌","secondaryBasis":"교통방해","primaryPct":87.2,"secondaryPct":73.8,"clarity":56.7,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":29.9,"traffic":73.8,"pedestrian":87.2,"enforcement":45.7,"safety":27.4,"loadingRisk":45.1,"trust":87.76,"grade":"높음","sourceCount":3,"decision":"③관찰유지","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":76.5},{"code":"3017058200","district":"서구","dong":"갈마2동","region":"서구 갈마2동","rank":32,"dlfi":203.53,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":86.0,"secondaryPct":75.0,"clarity":55.5,"policy":"배송시간 분산·공동배송 운영 검토","delivery":86.0,"traffic":25.6,"pedestrian":48.2,"enforcement":75.0,"safety":49.4,"loadingRisk":33.5,"trust":67.68,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":73.2},{"code":"3011069500","district":"동구","dong":"삼성동","region":"동구 삼성동","rank":33,"dlfi":200.99,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":94.5,"secondaryPct":59.1,"clarity":67.7,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":38.4,"traffic":94.5,"pedestrian":42.1,"enforcement":34.8,"safety":59.1,"loadingRisk":17.7,"trust":83.9,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.1},{"code":"3011074000","district":"동구","dong":"산내동","region":"동구 산내동","rank":34,"dlfi":200.81,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":94.5,"secondaryPct":53.0,"clarity":70.7,"policy":"등하교·취약계층 이동시간 회피","delivery":53.0,"traffic":25.6,"pedestrian":46.3,"enforcement":18.9,"safety":94.5,"loadingRisk":51.8,"trust":68.34,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":75.8},{"code":"3023052500","district":"대덕구","dong":"회덕동","region":"대덕구 회덕동","rank":35,"dlfi":200.42,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":86.0,"secondaryPct":82.3,"clarity":51.8,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":26.2,"traffic":86.0,"pedestrian":54.3,"enforcement":14.0,"safety":82.3,"loadingRisk":18.9,"trust":83.4,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":80.1},{"code":"3017053000","district":"서구","dong":"도마2동","region":"서구 도마2동","rank":36,"dlfi":199.74,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"역세권 보행충돌형","primaryBasis":"교통방해","secondaryBasis":"보행충돌","primaryPct":78.0,"secondaryPct":72.6,"clarity":52.7,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":62.8,"traffic":78.0,"pedestrian":72.6,"enforcement":39.6,"safety":15.2,"loadingRisk":39.6,"trust":83.49,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":80.4},{"code":"3017058700","district":"서구","dong":"월평2동","region":"서구 월평2동","rank":37,"dlfi":196.06,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"단속반복형","primaryBasis":"교통방해","secondaryBasis":"단속반복","primaryPct":87.2,"secondaryPct":81.1,"clarity":53.0,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":42.1,"traffic":87.2,"pedestrian":30.5,"enforcement":81.1,"safety":23.8,"loadingRisk":80.5,"trust":83.6,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":80.8},{"code":"3011059000","district":"동구","dong":"자양동","region":"동구 자양동","rank":38,"dlfi":195.28,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":72.6,"secondaryPct":56.7,"clarity":57.9,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":47.0,"traffic":72.6,"pedestrian":55.5,"enforcement":32.3,"safety":56.7,"loadingRisk":27.4,"trust":83.88,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.0},{"code":"3017056000","district":"서구","dong":"괴정동","region":"서구 괴정동","rank":39,"dlfi":193.85,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"하역공간 부족형","primaryBasis":"배송수요","secondaryBasis":"하역부족","primaryPct":88.4,"secondaryPct":86.0,"clarity":51.2,"policy":"배송시간 분산·공동배송 운영 검토","delivery":88.4,"traffic":25.6,"pedestrian":44.5,"enforcement":77.4,"safety":4.3,"loadingRisk":86.0,"trust":72.47,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|교통방해_대체값(괴정동_오적용확인)","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":71.3},{"code":"3011066500","district":"동구","dong":"성남동","region":"동구 성남동","rank":40,"dlfi":192.42,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"안전취약형","primaryBasis":"보행충돌","secondaryBasis":"안전취약","primaryPct":76.2,"secondaryPct":64.0,"clarity":56.1,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":18.9,"traffic":59.1,"pedestrian":76.2,"enforcement":23.8,"safety":64.0,"loadingRisk":32.3,"trust":83.64,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":81.0},{"code":"3017058100","district":"서구","dong":"갈마1동","region":"서구 갈마1동","rank":41,"dlfi":191.83,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":76.2,"secondaryPct":65.2,"clarity":55.5,"policy":"배송시간 분산·공동배송 운영 검토","delivery":76.2,"traffic":25.6,"pedestrian":56.7,"enforcement":65.2,"safety":33.5,"loadingRisk":64.0,"trust":74.37,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":78.9},{"code":"3020057000","district":"유성구","dong":"전민동","region":"유성구 전민동","rank":42,"dlfi":190.63,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"단속반복형","primaryBasis":"배송수요","secondaryBasis":"단속반복","primaryPct":77.4,"secondaryPct":70.1,"clarity":53.7,"policy":"배송시간 분산·공동배송 운영 검토","delivery":77.4,"traffic":25.6,"pedestrian":37.2,"enforcement":70.1,"safety":42.1,"loadingRisk":66.5,"trust":74.58,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|교통방해_대체값(괴정동_오적용확인)","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":79.8},{"code":"3017054000","district":"서구","dong":"변동","region":"서구 변동","rank":43,"dlfi":189.87,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":84.8,"secondaryPct":51.2,"clarity":66.8,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":40.9,"traffic":84.8,"pedestrian":39.0,"enforcement":33.5,"safety":51.2,"loadingRisk":34.8,"trust":83.9,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.1},{"code":"3020052600","district":"유성구","dong":"학하동","region":"유성구 학하동","rank":44,"dlfi":189.32,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"공동주택 배송집중형","primaryBasis":"교통방해","secondaryBasis":"배송수요","primaryPct":65.9,"secondaryPct":65.2,"clarity":50.3,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":65.2,"traffic":65.9,"pedestrian":53.0,"enforcement":31.1,"safety":61.6,"loadingRisk":4.9,"trust":83.87,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":81.9},{"code":"3017066000","district":"서구","dong":"둔산3동","region":"서구 둔산3동","rank":45,"dlfi":189.13,"highRisk":0,"primary":"하역공간 부족형","secondary":"상권·교통 혼잡형","primaryBasis":"하역부족","secondaryBasis":"교통방해","primaryPct":94.5,"secondaryPct":93.3,"clarity":50.6,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":45.7,"traffic":93.3,"pedestrian":59.1,"enforcement":43.3,"safety":0.6,"loadingRisk":94.5,"trust":78.53,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":70.0,"evidence":81.6},{"code":"3011058500","district":"동구","dong":"대동","region":"동구 대동","rank":46,"dlfi":188.95,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"안전취약형","primaryBasis":"보행충돌","secondaryBasis":"안전취약","primaryPct":86.0,"secondaryPct":66.5,"clarity":59.8,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":22.6,"traffic":25.6,"pedestrian":86.0,"enforcement":16.5,"safety":66.5,"loadingRisk":22.6,"trust":74.59,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":79.8},{"code":"3017065000","district":"서구","dong":"만년동","region":"서구 만년동","rank":47,"dlfi":187.14,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"단속반복형","primaryBasis":"교통방해","secondaryBasis":"단속반복","primaryPct":89.6,"secondaryPct":53.0,"clarity":68.3,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":43.3,"traffic":89.6,"pedestrian":40.9,"enforcement":53.0,"safety":11.0,"loadingRisk":48.2,"trust":83.87,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":81.9},{"code":"3023055000","district":"대덕구","dong":"신탄진동","region":"대덕구 신탄진동","rank":48,"dlfi":186.7,"highRisk":0,"primary":"하역공간 부족형","secondary":"단속반복형","primaryBasis":"하역부족","secondaryBasis":"단속반복","primaryPct":80.5,"secondaryPct":71.3,"clarity":54.6,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":59.1,"traffic":25.6,"pedestrian":43.3,"enforcement":71.3,"safety":51.2,"loadingRisk":80.5,"trust":75.19,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|교통방해_대체값(괴정동_오적용확인)","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":82.2},{"code":"3023057000","district":"대덕구","dong":"덕암동","region":"대덕구 덕암동","rank":49,"dlfi":183.37,"highRisk":0,"primary":"하역공간 부족형","secondary":"안전취약형","primaryBasis":"하역부족","secondaryBasis":"안전취약","primaryPct":94.5,"secondaryPct":86.0,"clarity":54.3,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":50.6,"traffic":61.0,"pedestrian":15.2,"enforcement":7.9,"safety":86.0,"loadingRisk":94.5,"trust":78.38,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":70.0,"evidence":81.0},{"code":"3014056000","district":"중구","dong":"중촌동","region":"중구 중촌동","rank":50,"dlfi":183.28,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"단속반복형","primaryBasis":"교통방해","secondaryBasis":"단속반복","primaryPct":82.3,"secondaryPct":55.5,"clarity":63.4,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":37.2,"traffic":82.3,"pedestrian":32.3,"enforcement":55.5,"safety":36.6,"loadingRisk":36.0,"trust":83.94,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.2},{"code":"3017058800","district":"서구","dong":"월평3동","region":"서구 월평3동","rank":51,"dlfi":179.5,"highRisk":0,"primary":"하역공간 부족형","secondary":"역세권 보행충돌형","primaryBasis":"하역부족","secondaryBasis":"보행충돌","primaryPct":94.5,"secondaryPct":77.4,"clarity":58.5,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":21.3,"traffic":75.0,"pedestrian":77.4,"enforcement":22.6,"safety":3.0,"loadingRisk":94.5,"trust":78.08,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":70.0,"evidence":79.8},{"code":"3011054500","district":"동구","dong":"신인동","region":"동구 신인동","rank":52,"dlfi":178.96,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"안전취약형","primaryBasis":"보행충돌","secondaryBasis":"안전취약","primaryPct":65.2,"secondaryPct":62.8,"clarity":51.2,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":25.0,"traffic":47.0,"pedestrian":65.2,"enforcement":15.2,"safety":62.8,"loadingRisk":28.7,"trust":83.9,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.0},{"code":"3017051000","district":"서구","dong":"복수동","region":"서구 복수동","rank":53,"dlfi":177.87,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":72.6,"secondaryPct":51.8,"clarity":60.4,"policy":"등하교·취약계층 이동시간 회피","delivery":51.8,"traffic":25.6,"pedestrian":34.8,"enforcement":37.2,"safety":72.6,"loadingRisk":37.2,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3011056000","district":"동구","dong":"용운동","region":"동구 용운동","rank":54,"dlfi":177.87,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":78.7,"secondaryPct":68.9,"clarity":54.9,"policy":"등하교·취약계층 이동시간 회피","delivery":68.9,"traffic":0.6,"pedestrian":57.9,"enforcement":49.4,"safety":78.7,"loadingRisk":56.7,"trust":83.72,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":81.3},{"code":"3017053500","district":"서구","dong":"정림동","region":"서구 정림동","rank":55,"dlfi":175.88,"highRisk":0,"primary":"안전취약형","secondary":"단속반복형","primaryBasis":"안전취약","secondaryBasis":"단속반복","primaryPct":60.4,"secondaryPct":50.6,"clarity":54.9,"policy":"등하교·취약계층 이동시간 회피","delivery":48.2,"traffic":25.6,"pedestrian":39.0,"enforcement":50.6,"safety":60.4,"loadingRisk":29.9,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3017059600","district":"서구","dong":"관저1동","region":"서구 관저1동","rank":56,"dlfi":173.21,"highRisk":0,"primary":"단속반복형","secondary":"하역공간 부족형","primaryBasis":"단속반복","secondaryBasis":"하역부족","primaryPct":73.8,"secondaryPct":70.1,"clarity":51.8,"policy":"탄력 하역권·단속 운영기준 검토","delivery":36.0,"traffic":25.6,"pedestrian":36.0,"enforcement":73.8,"safety":39.6,"loadingRisk":70.1,"trust":69.94,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.2},{"code":"3014068000","district":"중구","dong":"태평1동","region":"중구 태평1동","rank":57,"dlfi":172.79,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"단속반복형","primaryBasis":"보행충돌","secondaryBasis":"단속반복","primaryPct":89.6,"secondaryPct":26.2,"clarity":81.7,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":12.8,"traffic":25.6,"pedestrian":89.6,"enforcement":26.2,"safety":22.6,"loadingRisk":11.6,"trust":68.7,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":77.3},{"code":"3023053300","district":"대덕구","dong":"비래동","region":"대덕구 비래동","rank":58,"dlfi":168.68,"highRisk":0,"primary":"하역공간 부족형","secondary":"단속반복형","primaryBasis":"하역부족","secondaryBasis":"단속반복","primaryPct":71.3,"secondaryPct":56.7,"clarity":57.3,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":39.6,"traffic":25.6,"pedestrian":30.5,"enforcement":56.7,"safety":47.0,"loadingRisk":71.3,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3020054700","district":"유성구","dong":"노은2동","region":"유성구 노은2동","rank":59,"dlfi":167.67,"highRisk":0,"primary":"역세권 보행충돌형","secondary":"공동주택 배송집중형","primaryBasis":"보행충돌","secondaryBasis":"배송수요","primaryPct":79.9,"secondaryPct":57.9,"clarity":61.0,"policy":"출퇴근·보행 피크시간 하역 제한","delivery":57.9,"traffic":57.9,"pedestrian":79.9,"enforcement":3.0,"safety":28.7,"loadingRisk":3.0,"trust":88.82,"grade":"높음","sourceCount":3,"decision":"③관찰유지","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":80.7},{"code":"3017059000","district":"서구","dong":"가수원동","region":"서구 가수원동","rank":60,"dlfi":165.89,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"단속반복형","primaryBasis":"교통방해","secondaryBasis":"단속반복","primaryPct":83.5,"secondaryPct":54.3,"clarity":64.6,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":11.6,"traffic":83.5,"pedestrian":14.0,"enforcement":54.3,"safety":20.7,"loadingRisk":54.3,"trust":83.87,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":81.9},{"code":"3014055000","district":"중구","dong":"목동","region":"중구 목동","rank":61,"dlfi":160.74,"highRisk":0,"primary":"하역공간 부족형","secondary":"단속반복형","primaryBasis":"하역부족","secondaryBasis":"단속반복","primaryPct":75.0,"secondaryPct":59.1,"clarity":57.9,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":32.3,"traffic":25.6,"pedestrian":12.8,"enforcement":59.1,"safety":53.0,"loadingRisk":75.0,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3014062000","district":"중구","dong":"석교동","region":"중구 석교동","rank":62,"dlfi":159.13,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":67.7,"secondaryPct":33.5,"clarity":67.1,"policy":"등하교·취약계층 이동시간 회피","delivery":33.5,"traffic":25.6,"pedestrian":28.7,"enforcement":25.0,"safety":67.7,"loadingRisk":9.1,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3014071000","district":"중구","dong":"유천2동","region":"중구 유천2동","rank":63,"dlfi":159.07,"highRisk":0,"primary":"안전취약형","secondary":"단속반복형","primaryBasis":"안전취약","secondaryBasis":"단속반복","primaryPct":65.2,"secondaryPct":29.9,"clarity":67.7,"policy":"등하교·취약계층 이동시간 회피","delivery":27.4,"traffic":25.6,"pedestrian":23.8,"enforcement":29.9,"safety":65.2,"loadingRisk":20.1,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3014069000","district":"중구","dong":"태평2동","region":"중구 태평2동","rank":64,"dlfi":157.53,"highRisk":0,"primary":"안전취약형","secondary":"공동주택 배송집중형","primaryBasis":"안전취약","secondaryBasis":"배송수요","primaryPct":55.5,"secondaryPct":44.5,"clarity":55.5,"policy":"등하교·취약계층 이동시간 회피","delivery":44.5,"traffic":25.6,"pedestrian":22.6,"enforcement":28.7,"safety":55.5,"loadingRisk":15.2,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3020052700","district":"유성구","dong":"상대동","region":"유성구 상대동","rank":65,"dlfi":156.97,"highRisk":0,"primary":"하역공간 부족형","secondary":"공동주택 배송집중형","primaryBasis":"하역부족","secondaryBasis":"배송수요","primaryPct":94.5,"secondaryPct":54.3,"clarity":70.1,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":54.3,"traffic":51.8,"pedestrian":1.8,"enforcement":48.2,"safety":38.4,"loadingRisk":94.5,"trust":78.78,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":70.0,"evidence":82.6},{"code":"3014064000","district":"중구","dong":"부사동","region":"중구 부사동","rank":66,"dlfi":155.81,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":75.0,"secondaryPct":26.2,"clarity":74.4,"policy":"등하교·취약계층 이동시간 회피","delivery":10.4,"traffic":25.6,"pedestrian":26.2,"enforcement":20.1,"safety":75.0,"loadingRisk":14.0,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3023056000","district":"대덕구","dong":"석봉동","region":"대덕구 석봉동","rank":67,"dlfi":154.96,"highRisk":0,"primary":"하역공간 부족형","secondary":"단속반복형","primaryBasis":"하역부족","secondaryBasis":"단속반복","primaryPct":94.5,"secondaryPct":61.6,"clarity":66.5,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":34.8,"traffic":25.6,"pedestrian":17.7,"enforcement":61.6,"safety":16.5,"loadingRisk":94.5,"trust":64.74,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":30.0,"evidence":82.4},{"code":"3023058000","district":"대덕구","dong":"목상동","region":"대덕구 목상동","rank":68,"dlfi":152.88,"highRisk":0,"primary":"하역공간 부족형","secondary":"안전취약형","primaryBasis":"하역부족","secondaryBasis":"안전취약","primaryPct":50.6,"secondaryPct":45.1,"clarity":52.7,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":5.5,"traffic":25.6,"pedestrian":33.5,"enforcement":36.0,"safety":45.1,"loadingRisk":50.6,"trust":70.04,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3017057000","district":"서구","dong":"가장동","region":"서구 가장동","rank":69,"dlfi":152.14,"highRisk":0,"primary":"하역공간 부족형","secondary":"상권·교통 혼잡형","primaryBasis":"하역부족","secondaryBasis":"교통방해","primaryPct":65.2,"secondaryPct":56.7,"clarity":54.3,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":14.0,"traffic":56.7,"pedestrian":25.0,"enforcement":38.4,"safety":11.0,"loadingRisk":65.2,"trust":84.02,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.5},{"code":"3014065500","district":"중구","dong":"용두동","region":"중구 용두동","rank":70,"dlfi":150.23,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"안전취약형","primaryBasis":"교통방해","secondaryBasis":"안전취약","primaryPct":50.6,"secondaryPct":40.9,"clarity":54.9,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":23.8,"traffic":50.6,"pedestrian":20.1,"enforcement":11.6,"safety":40.9,"loadingRisk":21.3,"trust":89.29,"grade":"높음","sourceCount":3,"decision":"③관찰유지","qualityFlag":"-","freshness":80.6,"directness":87.6,"completeness":100.0,"evidence":82.6},{"code":"3014063000","district":"중구","dong":"대사동","region":"중구 대사동","rank":71,"dlfi":140.21,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"단속반복형","primaryBasis":"교통방해","secondaryBasis":"단속반복","primaryPct":54.3,"secondaryPct":44.5,"clarity":54.9,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":3.0,"traffic":54.3,"pedestrian":5.5,"enforcement":44.5,"safety":36.6,"loadingRisk":16.5,"trust":84.04,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.6},{"code":"3011067000","district":"동구","dong":"홍도동","region":"동구 홍도동","rank":72,"dlfi":135.26,"highRisk":0,"primary":"공동주택 배송집중형","secondary":"역세권 보행충돌형","primaryBasis":"배송수요","secondaryBasis":"보행충돌","primaryPct":31.1,"secondaryPct":27.4,"clarity":51.8,"policy":"배송시간 분산·공동배송 운영 검토","delivery":31.1,"traffic":25.6,"pedestrian":27.4,"enforcement":12.8,"safety":12.8,"loadingRisk":12.8,"trust":70.02,"grade":"보통","sourceCount":1,"decision":"③관찰유지","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.5},{"code":"3023061000","district":"대덕구","dong":"법2동","region":"대덕구 법2동","rank":73,"dlfi":133.14,"highRisk":0,"primary":"하역공간 부족형","secondary":"단속반복형","primaryBasis":"하역부족","secondaryBasis":"단속반복","primaryPct":77.4,"secondaryPct":27.4,"clarity":75.0,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":17.7,"traffic":4.3,"pedestrian":18.9,"enforcement":27.4,"safety":6.1,"loadingRisk":77.4,"trust":84.02,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.5},{"code":"3011055200","district":"동구","dong":"판암2동","region":"동구 판암2동","rank":74,"dlfi":130.34,"highRisk":0,"primary":"하역공간 부족형","secondary":"안전취약형","primaryBasis":"하역부족","secondaryBasis":"안전취약","primaryPct":73.8,"secondaryPct":32.3,"clarity":70.7,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":7.9,"traffic":25.6,"pedestrian":6.7,"enforcement":17.7,"safety":32.3,"loadingRisk":73.8,"trust":75.28,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":82.6},{"code":"3023060000","district":"대덕구","dong":"법1동","region":"대덕구 법1동","rank":75,"dlfi":128.53,"highRisk":0,"primary":"하역공간 부족형","secondary":"상권·교통 혼잡형","primaryBasis":"하역부족","secondaryBasis":"교통방해","primaryPct":94.5,"secondaryPct":25.6,"clarity":84.5,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":16.5,"traffic":25.6,"pedestrian":7.9,"enforcement":21.3,"safety":6.1,"loadingRisk":94.5,"trust":64.77,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":30.0,"evidence":82.5},{"code":"3014073000","district":"중구","dong":"문화2동","region":"중구 문화2동","rank":76,"dlfi":125.07,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":57.9,"secondaryPct":21.3,"clarity":68.3,"policy":"등하교·취약계층 이동시간 회피","delivery":15.2,"traffic":1.8,"pedestrian":21.3,"enforcement":9.1,"safety":57.9,"loadingRisk":10.4,"trust":84.04,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.6},{"code":"3017060000","district":"서구","dong":"기성동","region":"서구 기성동","rank":77,"dlfi":119.88,"highRisk":0,"primary":"안전취약형","secondary":"하역공간 부족형","primaryBasis":"안전취약","secondaryBasis":"하역부족","primaryPct":84.8,"secondaryPct":42.1,"clarity":71.3,"policy":"등하교·취약계층 이동시간 회피","delivery":1.8,"traffic":25.6,"pedestrian":0.6,"enforcement":4.3,"safety":84.8,"loadingRisk":42.1,"trust":69.81,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":81.7},{"code":"3023052000","district":"대덕구","dong":"대화동","region":"대덕구 대화동","rank":78,"dlfi":118.09,"highRisk":0,"primary":"하역공간 부족형","secondary":"상권·교통 혼잡형","primaryBasis":"하역부족","secondaryBasis":"교통방해","primaryPct":94.5,"secondaryPct":25.6,"clarity":84.5,"policy":"임시 하역면·마이크로 거점 우선 검토","delivery":9.1,"traffic":25.6,"pedestrian":4.3,"enforcement":6.7,"safety":17.7,"loadingRisk":94.5,"trust":64.77,"grade":"주의","sourceCount":1,"decision":"④보완조사","qualityFlag":"교통데이터_1종만|도로혼잡도(VDS)_전면결측|하역여유_하한0","freshness":80.6,"directness":87.6,"completeness":30.0,"evidence":82.5},{"code":"3014070000","district":"중구","dong":"유천1동","region":"중구 유천1동","rank":79,"dlfi":113.66,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":26.2,"secondaryPct":16.5,"clarity":54.9,"policy":"등하교·취약계층 이동시간 회피","delivery":6.7,"traffic":5.5,"pedestrian":16.5,"enforcement":5.5,"safety":26.2,"loadingRisk":6.7,"trust":84.03,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종","freshness":80.6,"directness":87.6,"completeness":85.0,"evidence":82.6},{"code":"3014060500","district":"중구","dong":"문창동","region":"중구 문창동","rank":80,"dlfi":108.57,"highRisk":0,"primary":"안전취약형","secondary":"상권·교통 혼잡형","primaryBasis":"안전취약","secondaryBasis":"교통방해","primaryPct":31.1,"secondaryPct":25.6,"clarity":52.7,"policy":"등하교·취약계층 이동시간 회피","delivery":4.3,"traffic":25.6,"pedestrian":3.0,"enforcement":10.4,"safety":31.1,"loadingRisk":4.9,"trust":75.28,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|교통방해_대체값(괴정동_오적용확인)","freshness":80.6,"directness":87.6,"completeness":60.0,"evidence":82.6},{"code":"3011072500","district":"동구","dong":"대청동","region":"동구 대청동","rank":81,"dlfi":88.29,"highRisk":0,"primary":"안전취약형","secondary":"역세권 보행충돌형","primaryBasis":"안전취약","secondaryBasis":"보행충돌","primaryPct":45.1,"secondaryPct":11.0,"clarity":67.1,"policy":"등하교·취약계층 이동시간 회피","delivery":0.6,"traffic":3.0,"pedestrian":11.0,"enforcement":1.8,"safety":45.1,"loadingRisk":1.8,"trust":70.04,"grade":"보통","sourceCount":2,"decision":"③관찰유지","qualityFlag":"교통데이터_2종|보행충돌점수_보정이력|배송수요점수_보정이력","freshness":80.6,"directness":87.6,"completeness":45.0,"evidence":82.6},{"code":"3011062000","district":"동구","dong":"가양1동","region":"동구 가양1동","rank":82,"dlfi":0.0,"highRisk":0,"primary":"상권·교통 혼잡형","secondary":"공동주택 배송집중형","primaryBasis":"교통방해","secondaryBasis":"배송수요","primaryPct":61.0,"secondaryPct":49.4,"clarity":55.8,"policy":"혼잡시간대 하역 회피·탄력 운영","delivery":49.4,"traffic":61.0,"pedestrian":9.1,"enforcement":0.6,"safety":1.8,"loadingRisk":0.6,"trust":66.51,"grade":"주의","sourceCount":2,"decision":"④보완조사","qualityFlag":"교통데이터_2종|단속반복_이상치|단속반복점수_보정이력","freshness":80.6,"directness":87.6,"completeness":35.0,"evidence":82.5}]</script>
+  <script>
+    (() => {
+      const root = document.getElementById("dcurb-demo");
+      const data = JSON.parse(document.getElementById("dc-data").textContent);
+      const types = [
+        "공동주택 배송집중형",
+        "상권·교통 혼잡형",
+        "역세권 보행충돌형",
+        "단속반복형",
+        "안전취약형",
+        "하역공간 부족형"
+      ];
+      const metrics = [
+        ["배송수요", "delivery"],
+        ["교통방해", "traffic"],
+        ["보행충돌", "pedestrian"],
+        ["단속반복", "enforcement"],
+        ["안전취약", "safety"],
+        ["하역부족", "loadingRisk"]
+      ];
+      const policyPackages = {
+        "공동주택 배송집중형": ["공동주택 배송시간 슬롯 분산", "단지별 공동배송 운영 검토", "17~20시 집중물량 분산 유도"],
+        "상권·교통 혼잡형": ["상권 혼잡시간대 하역 회피", "단시간 탄력 하역구역 운영", "버스정류장·교차로 인접구간 제외"],
+        "역세권 보행충돌형": ["출퇴근 보행 피크시간 하역 제한", "역 출입구 주변 완충구간 설정", "보행량이 낮은 시간대로 배송 전환"],
+        "단속반복형": ["상습단속구간 탄력 하역권 검토", "단속 CCTV·안내표지 위치 재검토", "허용시간과 금지시간 현장 표시"],
+        "안전취약형": ["등하교시간 하역 회피", "보호구역 반경 내 후보지 추천 제외", "취약계층 이동시간 장기정차 최소화"],
+        "하역공간 부족형": ["임시 하역면 우선 설치", "공영주차장·공공시설 유휴공간 검토", "소형 마이크로 물류거점 후보지 조사"]
+      };
+
+      const districtSelect = root.querySelector("#dc-district");
+      const typeSelect = root.querySelector("#dc-type");
+      const regionSelect = root.querySelector("#dc-region");
+      const compareA = root.querySelector("#dc-compare-a");
+      const compareB = root.querySelector("#dc-compare-b");
+      const loadingSlider = root.querySelector("#dc-loading");
+      const dispersionSlider = root.querySelector("#dc-dispersion");
+
+      function option(value, label) {
+        const item = document.createElement("option");
+        item.value = value;
+        item.textContent = label;
+        return item;
+      }
+
+      function replaceOptions(select, items, selectedValue) {
+        select.replaceChildren();
+        items.forEach((item) => select.appendChild(option(item.value, item.label)));
+        if (items.some((item) => item.value === selectedValue)) {
+          select.value = selectedValue;
+        }
+      }
+
+      function selectedRow() {
+        return data.find((row) => row.region === regionSelect.value) || data[0];
+      }
+
+      function filteredRows() {
+        return data.filter((row) => {
+          const districtOk = districtSelect.value === "전체" || row.district === districtSelect.value;
+          const typeOk = typeSelect.value === "전체" || row.primary === typeSelect.value;
+          return districtOk && typeOk;
+        });
+      }
+
+      function renderBars(container, rows) {
+        container.replaceChildren();
+        rows.forEach((row) => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "dc-bar-row";
+          wrapper.innerHTML = `
+            <span>${row.label}</span>
+            <div class="dc-track" aria-label="${row.label} ${row.value.toFixed(1)}">
+              <div class="dc-fill ${row.secondary ? "secondary" : ""}" style="width:${Math.max(0, Math.min(100, row.value))}%"></div>
+            </div>
+            <strong>${row.value.toFixed(1)}</strong>
+          `;
+          container.appendChild(wrapper);
+        });
+      }
+
+      function renderList(container, items) {
+        container.replaceChildren();
+        items.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = item;
+          container.appendChild(li);
+        });
+      }
+
+      function priority(row) {
+        if (row.highRisk === 1) return "시범사업 우선 검토";
+        if (row.rank <= data.length * 0.4) return "중점 관리 검토";
+        return "일반 모니터링";
+      }
+
+      function updateFilters() {
+        const previous = regionSelect.value;
+        const rows = filteredRows();
+        replaceOptions(
+          regionSelect,
+          rows.map((row) => ({ value: row.region, label: row.region })),
+          previous
+        );
+        renderSelected();
+      }
+
+      function renderSelected() {
+        const row = selectedRow();
+        root.querySelector("#dc-type-badge").textContent = row.primary;
+        root.querySelector("#dc-selected-name").textContent = row.region;
+        root.querySelector("#dc-dlfi").textContent = row.dlfi.toFixed(2);
+        root.querySelector("#dc-rank").textContent = `${row.rank}위`;
+        root.querySelector("#dc-clarity").textContent = row.clarity.toFixed(1);
+        root.querySelector("#dc-secondary").textContent = row.secondary;
+        root.querySelector("#dc-policy").textContent = row.policy;
+
+        renderBars(
+          root.querySelector("#dc-risk-bars"),
+          metrics.map(([label, key]) => ({ label, value: row[key] }))
+        );
+
+        const evidence = root.querySelector("#dc-evidence");
+        evidence.innerHTML = `
+          <div class="dc-evidence-row"><span>주요 위험</span><strong>${row.primaryBasis} · ${row.primaryPct.toFixed(1)}</strong></div>
+          <div class="dc-evidence-row"><span>보조 위험</span><strong>${row.secondaryBasis} · ${row.secondaryPct.toFixed(1)}</strong></div>
+        `;
+
+        const body = root.querySelector("#dc-ranking-body");
+        body.replaceChildren();
+        filteredRows().slice(0, 12).forEach((item) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${item.rank}</td>
+            <td>${item.region}</td>
+            <td>${item.dlfi.toFixed(2)}</td>
+            <td>${item.primary}</td>
+            <td>${item.clarity.toFixed(1)}</td>
+          `;
+          body.appendChild(tr);
+        });
+
+        root.querySelector("#dc-priority").textContent = priority(row);
+        root.querySelector("#dc-policy-region").textContent = `${row.region} 정책 패키지`;
+        root.querySelector("#dc-primary-title").textContent = `1순위 · ${row.primary}`;
+        root.querySelector("#dc-secondary-title").textContent = `보완 · ${row.secondary}`;
+        renderList(root.querySelector("#dc-primary-list"), policyPackages[row.primary] || [row.policy]);
+        renderList(root.querySelector("#dc-secondary-list"), (policyPackages[row.secondary] || []).slice(0, 2));
+
+        root.querySelector("#dc-trust").textContent = row.trust.toFixed(2);
+        root.querySelector("#dc-grade").textContent = row.grade;
+        root.querySelector("#dc-source-count").textContent = row.sourceCount;
+        root.querySelector("#dc-decision").textContent = row.decision;
+        root.querySelector("#dc-quality-flag").textContent = row.qualityFlag;
+        renderBars(root.querySelector("#dc-quality-bars"), [
+          { label: "최신성", value: row.freshness },
+          { label: "직접성", value: row.directness },
+          { label: "완전성", value: row.completeness },
+          { label: "근거", value: row.evidence }
+        ]);
+        renderSimulation();
+      }
+
+      function renderSimulation() {
+        const row = selectedRow();
+        const loading = Number(loadingSlider.value);
+        const dispersion = Number(dispersionSlider.value);
+        const loadingRate = Math.min(0.25, loading * 0.05);
+        const dispersionRate = dispersion / 100;
+        const overlap = Math.min(loadingRate, dispersionRate) * 0.4;
+        const totalRate = Math.min(0.45, loadingRate + dispersionRate - overlap);
+        root.querySelector("#dc-loading-value").textContent = `${loading}개`;
+        root.querySelector("#dc-dispersion-value").textContent = `${dispersion}%`;
+        root.querySelector("#dc-before").textContent = row.dlfi.toFixed(2);
+        root.querySelector("#dc-after").textContent = (row.dlfi * (1 - totalRate)).toFixed(2);
+        root.querySelector("#dc-reduction").textContent = `${(totalRate * 100).toFixed(1)}%`;
+      }
+
+      function renderComparison() {
+        const rowA = data.find((row) => row.region === compareA.value) || data[0];
+        const rowB = data.find((row) => row.region === compareB.value) || data[1] || data[0];
+        root.querySelector("#dc-a-name").textContent = rowA.region;
+        root.querySelector("#dc-b-name").textContent = rowB.region;
+        root.querySelector("#dc-a-score").textContent = rowA.dlfi.toFixed(2);
+        root.querySelector("#dc-b-score").textContent = rowB.dlfi.toFixed(2);
+        root.querySelector("#dc-gap").textContent = Math.abs(rowA.dlfi - rowB.dlfi).toFixed(2);
+
+        const bars = root.querySelector("#dc-compare-bars");
+        bars.replaceChildren();
+        let largest = { label: "", diff: 0 };
+        metrics.forEach(([label, key]) => {
+          const diff = rowA[key] - rowB[key];
+          if (Math.abs(diff) > Math.abs(largest.diff)) largest = { label, diff };
+          const wrapper = document.createElement("div");
+          wrapper.className = "dc-compare-row";
+          wrapper.innerHTML = `
+            <span>${label}</span>
+            <div class="dc-dual">
+              <div class="dc-track"><div class="dc-fill" style="width:${rowA[key]}%"></div></div>
+              <div class="dc-track"><div class="dc-fill secondary" style="width:${rowB[key]}%"></div></div>
+            </div>
+          `;
+          bars.appendChild(wrapper);
+        });
+        const higher = largest.diff >= 0 ? rowA.region : rowB.region;
+        root.querySelector("#dc-compare-summary").innerHTML =
+          `가장 큰 차이는 <strong>${largest.label}</strong>이며, <strong>${higher}</strong>이(가) ${Math.abs(largest.diff).toFixed(1)}백분위p 더 높습니다.`;
+      }
+
+      const districts = [...new Set(data.map((row) => row.district))].sort();
+      replaceOptions(
+        districtSelect,
+        [{ value: "전체", label: "전체" }, ...districts.map((item) => ({ value: item, label: item }))],
+        "전체"
+      );
+      replaceOptions(
+        typeSelect,
+        [{ value: "전체", label: "전체" }, ...types.map((item) => ({ value: item, label: item }))],
+        "전체"
+      );
+      replaceOptions(
+        compareA,
+        data.map((row) => ({ value: row.region, label: row.region })),
+        data[0].region
+      );
+      replaceOptions(
+        compareB,
+        data.map((row) => ({ value: row.region, label: row.region })),
+        (data[1] || data[0]).region
+      );
+
+      districtSelect.addEventListener("change", updateFilters);
+      typeSelect.addEventListener("change", updateFilters);
+      regionSelect.addEventListener("change", renderSelected);
+      loadingSlider.addEventListener("input", renderSimulation);
+      dispersionSlider.addEventListener("input", renderSimulation);
+      compareA.addEventListener("change", renderComparison);
+      compareB.addEventListener("change", renderComparison);
+
+      root.querySelectorAll("[data-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          root.querySelectorAll("[data-tab]").forEach((item) => {
+            item.setAttribute("aria-selected", String(item === button));
+          });
+          root.querySelectorAll("[data-panel]").forEach((panel) => {
+            panel.hidden = panel.dataset.panel !== button.dataset.tab;
+          });
+        });
+      });
+
+      updateFilters();
+      renderComparison();
+    })();
+  </script>
+</div>
+
+<script id="codex-visualization-floating-ui-core" src="https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js"></script>
+<script id="codex-visualization-floating-ui-dom" src="https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js"></script>
+<script id="codex-visualization-lucide" async src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js"></script>
+<script id="codex-visualization-tooltip">/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return */
+// Runs inside the visualization sandbox, not the host webview.
+(() => {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set(["top", "right", "bottom", "left"]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =>
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest("[data-tooltip]")
+      : null;
+  const containsTarget = (trigger, target) =>
+    target?.nodeType != null && trigger.contains(target);
+  const getContent = (trigger) =>
+    trigger.getAttribute("data-tooltip")?.trim() ?? "";
+  const getPlacement = (trigger) => {
+    const placement = trigger.getAttribute("data-tooltip-placement");
+    return tooltipPlacements.has(placement) ? placement : "top";
+  };
+  const getTooltip = () => {
+    if (tooltip == null) {
+      tooltip = document.createElement("div");
+      tooltip.id = tooltipId;
+      tooltip.className = "tooltip";
+      tooltip.setAttribute("role", "tooltip");
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) => {
+    const ids = new Set(
+      (trigger.getAttribute("aria-describedby") ?? "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute("aria-describedby");
+    } else {
+      trigger.setAttribute("aria-describedby", [...ids].join(" "));
+    }
+  };
+  const clearOpenTimeout = () => {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) => {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) => {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              "--tooltip-available-width",
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              "--tooltip-available-height",
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: "fixed",
+    })
+      .then(({ x, y }) => {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = "visible";
+      })
+      .catch(() => {
+        if (activeTrigger === trigger && request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) => {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = "hidden";
+    floating.style.transform = "translate(0, 0)";
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () => {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) => {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() < skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() => {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(":focus-visible")) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) => {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () => {
+    closeTooltip(false);
+    document.removeEventListener("pointerover", handlePointerOpen);
+    document.removeEventListener("pointerout", handleLeave);
+    document.removeEventListener("focusin", handleFocusIn);
+    document.removeEventListener("focusout", handleLeave);
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener("pointerover", handlePointerOpen);
+  document.addEventListener("pointerout", handleLeave);
+  document.addEventListener("focusin", handleFocusIn);
+  document.addEventListener("focusout", handleLeave);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  window.addEventListener("pagehide", destroy, { once: true });
+})();
+</script>
+<script id="codex-visualization-lucide-initialization">(() => {
+  const initialize = () => {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById("codex-visualization-lucide")
+    ?.addEventListener("load", initialize, { once: true });
+})();
+</script>
+</body>
+</html>

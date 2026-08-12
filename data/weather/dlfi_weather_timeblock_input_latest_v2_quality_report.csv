@@ -1,0 +1,9 @@
+﻿check_name,actual_value,expected_value,result
+전체 행 수 유지,1640,1640,PASS
+행정동 수,82,82,PASS
+복합키 중복,0,0,PASS
+복합키 결측,0,0,PASS
+핵심 기능변수 결측,0,0,PASS
+시간대 예보 미충족 행,492,0,CHECK
+자치구명 일치,True,True,PASS
+행정동명 일치,True,True,PASS

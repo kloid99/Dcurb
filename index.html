@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D-Curb Guardian · 대전 물류 마찰 지도</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f8fb; color: #0f172a; }
+    #title {
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 12px 16px; font-size: 18px; font-weight: 800; background: #fff; border-bottom: 1px solid #e2e8f0;
+    }
+    #title small { display: block; margin-top: 2px; font-size: 12px; color: #64748b; font-weight: 600; }
+    #legend { display: flex; gap: 8px; align-items: center; font-size: 11px; color: #475569; font-weight: 700; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 999px; display: inline-block; }
+    #map { width: 100%; height: 590px; }
+    .panel {
+      position: absolute; right: 14px; top: 82px; z-index: 500; width: 260px;
+      background: rgba(255,255,255,.96); border: 1px solid #e2e8f0; border-radius: 12px;
+      box-shadow: 0 12px 28px rgba(15,23,42,.12); padding: 14px;
+    }
+    .panel h2 { margin: 0 0 8px; font-size: 15px; }
+    .panel p { margin: 0 0 10px; font-size: 12px; color: #64748b; line-height: 1.45; }
+    .metric { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 12px; padding: 7px 0; border-top: 1px solid #eef2f7; }
+    .metric b { color: #0f766e; }
+    .feedback-note {
+      margin-top: 10px; padding: 10px; border-radius: 10px; background: #fff7ed; border: 1px solid #fed7aa;
+      color: #9a3412; font-size: 11px; line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div id="title">
+    <div>
+      D-Curb Guardian · 대전 물류 마찰 지도
+      <small>DLFI 위험 행정동, 하역 후보지, 서비스 반경을 함께 표시합니다.</small>
+    </div>
+    <div id="legend">
+      <span><i class="legend-dot" style="background:#dc2626"></i> 위험</span>
+      <span><i class="legend-dot" style="background:#f59e0b"></i> 주의</span>
+      <span><i class="legend-dot" style="background:#10b981"></i> 후보지</span>
+    </div>
+  </div>
+  <div id="map"></div>
+  <aside class="panel">
+    <h2>지도 데이터 적용 상태</h2>
+    <p>이 HTML은 Streamlit의 <b>st.components.v1.html</b>로 삽입되는 지도 컴포넌트입니다.</p>
+    <div class="metric"><span>피드백 저장</span><b>브라우저 localStorage</b></div>
+    <div class="metric"><span>운영 버전 확장</span><b>CSV/DB 전송</b></div>
+    <div class="metric"><span>지도 엔진</span><b>Leaflet</b></div>
+    <div class="feedback-note">
+      배송기사 피드백은 현재 데모에서 서버로 전송되지 않고 브라우저 임시 저장소에 누적됩니다.
+      운영형 전환 시 API 또는 driver_feedback CSV로 연결해야 합니다.
+    </div>
+  </aside>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const VWORLD_KEY = "484E92C1-0914-39C2-9CDE-CA57FFA25C88";
+    const map = L.map("map", { zoomControl: true }).setView([36.3504, 127.3845], 12);
+
+    if (VWORLD_KEY) {
+      L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`, {
+        attribution: "VWorld"
+      }).addTo(map);
+    } else {
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "OpenStreetMap"
+      }).addTo(map);
+    }
+
+    const riskDongs = [
+      { name: "온천1동", gu: "유성구", lat: 36.3542, lng: 127.3412, dlfi: 352.82, level: "위험" },
+      { name: "둔산2동", gu: "서구", lat: 36.3538, lng: 127.3822, dlfi: 320.22, level: "위험" },
+      { name: "중앙동", gu: "동구", lat: 36.3312, lng: 127.4335, dlfi: 298.10, level: "주의" },
+      { name: "노은1동", gu: "유성구", lat: 36.3671, lng: 127.3182, dlfi: 295.15, level: "주의" }
+    ];
+
+    const candidateSites = [
+      { name: "버드내길 공영주차장 앞", lat: 36.332, lng: 127.434, type: "공영주차장", radius: 420 },
+      { name: "중앙로 14번길 이면도로", lat: 36.330, lng: 127.432, type: "탄력하역구역", radius: 360 },
+      { name: "대전역 동광장 마이크로거점", lat: 36.333, lng: 127.438, type: "마이크로거점", radius: 500 }
+    ];
+
+    riskDongs.forEach((d) => {
+      const color = d.level === "위험" ? "#dc2626" : "#f59e0b";
+      L.circleMarker([d.lat, d.lng], {
+        radius: d.level === "위험" ? 13 : 10,
+        color,
+        fillColor: color,
+        fillOpacity: 0.78,
+        weight: 2
+      }).addTo(map).bindPopup(`<b>${d.gu} ${d.name}</b><br>DLFI ${d.dlfi}<br>등급: ${d.level}`);
+    });
+
+    candidateSites.forEach((site) => {
+      L.marker([site.lat, site.lng]).addTo(map).bindPopup(`<b>${site.name}</b><br>${site.type}<br>서비스 반경 ${site.radius}m`);
+      L.circle([site.lat, site.lng], {
+        radius: site.radius,
+        color: "#10b981",
+        fillColor: "#10b981",
+        fillOpacity: 0.12,
+        weight: 2
+      }).addTo(map);
+    });
+  </script>
+</body>
+</html>
